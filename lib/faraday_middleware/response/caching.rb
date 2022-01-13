@@ -50,7 +50,7 @@ module FaradayMiddleware
     end
 
     def call(env)
-      if env[:method] == :get
+      if cacheable?(env)
         if env[:parallel_manager]
           # callback mode
           cache_on_complete(env)
@@ -66,6 +66,10 @@ module FaradayMiddleware
       else
         @app.call(env)
       end
+    end
+
+    def cacheable?(env)
+      env[:method] == get && !(cache_control.no_store?)
     end
 
     def cache_key(env)
@@ -86,6 +90,10 @@ module FaradayMiddleware
 
     def full_key?
       @full_key ||= @options[:full_key]
+    end
+
+    def cache_control
+      @cache_control ||= CacheControl.new(env[:request_headers]['Cache-Control'])
     end
 
     def custom_status_codes
